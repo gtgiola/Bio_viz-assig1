@@ -184,23 +184,26 @@ void iteration() {
           cell[x][y] = 0;
         }
         if (zombieneighbours > 0) {
-          cell[x][y] = 2;
+          cell[x][y] = 2; //Rule 4 zombies make other zombies
         }
-      } else { // Rule 4 if a dead cell has 3 neighbours becomes a live cell      
+        if (predneighbours > neighbours) {
+          cell[x][y] = 0;//rule 5 predators kill prey
+        }
+      } else { // Rule 6 if a dead cell has 3 neighbours becomes a live cell      
         if (neighbours == 3 && zombieneighbours == 0 && predneighbours == 0) {
           cell[x][y] = 1;
         }
       }
-      if (cellBuffer[x][y]==3) {
+      if (cellBuffer[x][y]==3) {//rule 1,2,3
         if (predneighbours < 2 || predneighbours > 3) {
           cell[x][y] = 0;
         }
         if (zombieneighbours > 0) {
-          cell[x][y] = 2;
+          cell[x][y] = 2; // rule 4
         }
       } else {
         if (predneighbours == 3 && zombieneighbours == 0 && neighbours == 0) {
-          cell[x][y] = 3;
+          cell[x][y] = 3; //rule 6
         }
       }
     }
