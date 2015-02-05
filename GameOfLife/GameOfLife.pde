@@ -1,10 +1,10 @@
 int cellSize = 10;// Size of cells
 float probabilityOfAliveAtStart = 15;//percentage
-float probabilityOfSickAtStart = 1;
 float interval;// variable for slider
 int lastRecordedTime = 0;
 color alive = color(255, 0, 0);// Colors for active/inactive cells
-color sick = color(0, 255, 0);
+color zombie = color(0, 255, 0);
+color pred = color(0, 0, 255);
 color dead = color(0, 0, 0);
 int[][] cell;// Array of cells 
 int[][] cellBuffer;// Buffer to record the state of the cells 
@@ -44,9 +44,9 @@ void setup() {
   pauseRecY = 70;
   resetRecY = 120;
   clearRecY = 170;
-  
+
   background(255);// White background
-  
+
   hs1 = new Scrollbar(50, 425, 500, 16, 10);
 }
 
@@ -57,6 +57,10 @@ void draw() {
     for (int y=0; y<400/cellSize; y++) {
       if (cell[x][y]==1) {
         fill(alive);
+      } else if (cell[x][y]==2) {
+        fill(zombie);
+      } else if (cell[x][y]==3) {
+        fill(pred);
       } else {
         fill(dead);
       }
@@ -72,8 +76,8 @@ void draw() {
     }
   }
 
-  // Create  new cells manually on pause
-  if (pause && mousePressed) {
+  // draw new cells on pause
+  if (pause && mousePressed && (mouseButton == LEFT)) {
     // Map and avoid out of bound errors
     int xCellOver = int(map(mouseX, 0, 600, 0, 600/cellSize));
     xCellOver = constrain(xCellOver, 0, 600/cellSize-1);
@@ -84,13 +88,35 @@ void draw() {
     if (cellBuffer[xCellOver][yCellOver]==1) {
       cell[xCellOver][yCellOver]=0;
       fill(dead);
-    }
-    else { // Cell is dead
+    } else { // Cell is dead
       cell[xCellOver][yCellOver]=1; // Make alive
       fill(alive); // Fill alive color
     }
-  } 
-  else if (pause && !mousePressed) { // And then save to buffer once mouse goes up
+  } else if (pause && mousePressed && (mouseButton == RIGHT)) {
+    // Map and avoid out of bound errors
+    int xCellOver = int(map(mouseX, 0, 600, 0, 600/cellSize));
+    xCellOver = constrain(xCellOver, 0, 600/cellSize-1);
+    int yCellOver = int(map(mouseY, 0, 400, 0, 400/cellSize));
+    yCellOver = constrain(yCellOver, 0, 400/cellSize-1);
+
+    // Check against cells in buffer
+    if (cellBuffer[xCellOver][yCellOver]==1 || cellBuffer[xCellOver][yCellOver]==0) {
+      cell[xCellOver][yCellOver]=2; // Make zombie
+      fill(alive); // Fill alive color
+    }
+  } else if (pause && keyPressed && (keyCode == UP)) {
+    // Map and avoid out of bound errors
+    int xCellOver = int(map(mouseX, 0, 600, 0, 600/cellSize));
+    xCellOver = constrain(xCellOver, 0, 600/cellSize-1);
+    int yCellOver = int(map(mouseY, 0, 400, 0, 400/cellSize));
+    yCellOver = constrain(yCellOver, 0, 400/cellSize-1);
+
+    // Check against cells in buffer
+    if (cellBuffer[xCellOver][yCellOver]==1 || cellBuffer[xCellOver][yCellOver]==0) {
+      cell[xCellOver][yCellOver]=3; // Make pred
+      fill(alive); // Fill alive color
+    }
+  } else if (pause && !mousePressed) { // And then save to buffer once mouse goes up
     // Save cells to buffer (so we opeate with one array keeping the other intact)
     for (int x=0; x<600/cellSize; x++) {
       for (int y=0; y<400/cellSize; y++) {
@@ -99,8 +125,8 @@ void draw() {
     }
   }
   textSize(32);
-  if(pause){
-    fill(255, 0,0);
+  if (pause) {
+    fill(255, 0, 0);
   }
   rect(RecX, pauseRecY, recSizeX, recSizeY);
   fill(0, 0, 255);
@@ -116,29 +142,35 @@ void draw() {
   String s = "Move the slider to adjust the interval speed.";
   textSize(20);
   text(s, 100, 475);
-  
+
   hs1.update();
   hs1.display();
 }
 
-void iteration() { // When the clock ticks
-  // Save cells to buffer (so we opeate with one array keeping the other intact)
+void iteration() {
+  // save cells to buffer
   for (int x=0; x<600/cellSize; x++) {
     for (int y=0; y<400/cellSize; y++) {
       cellBuffer[x][y] = cell[x][y];
     }
   }
 
-  // Visit each cell and its neighbours
+  // visit each cell and its neighbours
   for (int x=0; x<600/cellSize; x++) {
     for (int y=0; y<400/cellSize; y++) {
-      int neighbours = 0; // We'll count the neighbours
-      for (int xx=x-1; xx<=x+1;xx++) {
-        for (int yy=y-1; yy<=y+1;yy++) {  
-          if (((xx>=0)&&(xx<600/cellSize))&&((yy>=0)&&(yy<400/cellSize))) { // Make sure you are not out of bounds
-            if (!((xx==x)&&(yy==y))) { // Make sure to to check against self
-              if (cellBuffer[xx][yy]==1){
-                neighbours ++; // Check alive neighbours and count them
+      int neighbours = 0;
+      int zombieneighbours = 0;
+      int predneighbours = 0;
+      for (int xx=x-1; xx<=x+1; xx++) {
+        for (int yy=y-1; yy<=y+1; yy++) {  
+          if (((xx>=0)&&(xx<600/cellSize))&&((yy>=0)&&(yy<400/cellSize))) { // check bounds
+            if (!((xx==x)&&(yy==y))) {
+              if (cellBuffer[xx][yy]==1) {
+                neighbours ++; // count alive neighbours
+              } else if (cellBuffer[xx][yy]==2) {
+                zombieneighbours ++;
+              } else if (cellBuffer[xx][yy]==3) {
+                predneighbours ++;
               }
             }
           }
@@ -151,19 +183,33 @@ void iteration() { // When the clock ticks
         if (neighbours < 2 || neighbours > 3) {
           cell[x][y] = 0;
         }
-      } 
-      else { // Rule 4 if a dead cell has 3 neighbours becomes a live cell      
-        if (neighbours == 3 ) {
+        if (zombieneighbours > 0) {
+          cell[x][y] = 2;
+        }
+      } else { // Rule 4 if a dead cell has 3 neighbours becomes a live cell      
+        if (neighbours == 3 && zombieneighbours == 0 && predneighbours == 0) {
           cell[x][y] = 1;
+        }
+      }
+      if (cellBuffer[x][y]==3) {
+        if (predneighbours < 2 || predneighbours > 3) {
+          cell[x][y] = 0;
+        }
+        if (zombieneighbours > 0) {
+          cell[x][y] = 2;
+        }
+      } else {
+        if (predneighbours == 3 && zombieneighbours == 0 && neighbours == 0) {
+          cell[x][y] = 3;
         }
       }
     }
   }
 }
 
-boolean overRec(int x, int y, int width, int height)  {
+boolean overRec(int x, int y, int width, int height) {
   if (mouseX >= x && mouseX <= x+width &&
-      mouseY >= y && mouseY <= y+height) {
+    mouseY >= y && mouseY <= y+height) {
     return true;
   } else {
     return false;
@@ -183,8 +229,7 @@ void update(int x, int y) {
     overClear = true;
     overPause = false;
     overReset = false;
-  } 
-  else {
+  } else {
     overPause = overReset = overClear = false;
   }
 }
@@ -199,8 +244,7 @@ void mousePressed() {
         float state = random (100);
         if (state > probabilityOfAliveAtStart) {
           state = 0;
-        }
-        else {
+        } else {
           state = 1;
         }
         cell[x][y] = int(state); // Save state of each cell
@@ -219,10 +263,10 @@ void mousePressed() {
 class Scrollbar {
   int bwidth, bheight;    // width and height of bar
   float xbar, ybar;       //position of bar
-  float spos, newspos;    // x position of slider
+  float spos, newspos;    // position of slider
   float sposMin, sposMax; // max and min values of slider
   int loose;              // how loose/heavy
-  boolean over;           // is the mouse over the slider?
+  boolean over;           // mouse over the slider
   boolean clicked;
 
   Scrollbar (float xp, float yp, int bw, int bh, int l) {
@@ -263,7 +307,7 @@ class Scrollbar {
 
   boolean overEvent() {
     if (mouseX > xbar && mouseX < xbar+bwidth &&
-       mouseY > ybar && mouseY < ybar+bheight) {
+      mouseY > ybar && mouseY < ybar+bheight) {
       return true;
     } else {
       return false;
@@ -286,3 +330,4 @@ class Scrollbar {
     return 500 - spos;
   }
 }
+
