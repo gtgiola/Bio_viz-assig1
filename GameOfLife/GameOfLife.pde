@@ -5,26 +5,27 @@ int lastRecordedTime = 0;
 color alive = color(255, 0, 0);// Colors for active/inactive cells
 color zombie = color(0, 255, 0);
 color pred = color(0, 0, 255);
-color dead = color(0, 0, 0);
+color dead = color(255, 255, 255);
 int[][] cell;// Array of cells 
 int[][] cellBuffer;// Buffer to record the state of the cells 
 boolean pause = false;
 int RecX, pauseRecY, resetRecY, clearRecY;// Params for button sizes
 int recSizeX = 90;
 int recSizeY = 35;
+int countPrey, countPred, countZ;
 boolean overPause = false;
 boolean overReset = false;
 boolean overClear = false;
 Scrollbar hs1;
 
 void setup() {
-  size (800, 500);
+  size (900, 500);
   // Instantiate arrays
   cell = new int[600/cellSize][400/cellSize];
   cellBuffer = new int[600/cellSize][400/cellSize];
 
   // Background grid
-  stroke(48);
+  stroke(#747075);
 
   noSmooth();
 
@@ -52,30 +53,51 @@ void setup() {
 
 void draw() {
   update(mouseX, mouseY);
+  countPrey = 0;
+  countZ = 0;
+  countPred = 0;
   //Grid
   for (int x=0; x<600/cellSize; x++) {
     for (int y=0; y<400/cellSize; y++) {
       if (cell[x][y]==1) {
         fill(alive);
+        countPrey ++;
       } else if (cell[x][y]==2) {
         fill(zombie);
+        countZ ++;
       } else if (cell[x][y]==3) {
         fill(pred);
+        countPred ++;
       } else {
         fill(dead);
       }
       rect (x*cellSize, y*cellSize, cellSize, cellSize);
+      fill(0, 0, 255);
     }
   }
+
   float interval = hs1.getPos();
   // Iterate if timer ticks
   if (millis()-lastRecordedTime>interval) {
     if (!pause) {
       iteration();
       lastRecordedTime = millis();
+      fill(255, 255, 255);
+      rect(850, 200, 850, 350);
+      fill(0, 0, 255);
+      text(countPrey, 850, 250);
+      text(countPred, 850, 275);
+      text(countZ, 850, 300);
     }
   }
-
+  if (pause) {
+    fill(255, 255, 255);
+    rect(850, 200, 850, 350);
+    fill(0, 0, 255);
+    text(countPrey, 850, 250);
+    text(countPred, 850, 275);
+    text(countZ, 850, 300);
+  }
   // draw new cells on pause
   if (pause && mousePressed && (mouseButton == LEFT)) {
     // Map and avoid out of bound errors
@@ -92,7 +114,7 @@ void draw() {
       cell[xCellOver][yCellOver]=1; // Make alive
       fill(alive); // Fill alive color
     }
-  } else if (pause && mousePressed && (mouseButton == RIGHT)) {
+  } else if (pause && keyPressed && (key == 'Z'|| key == 'z')) {
     // Map and avoid out of bound errors
     int xCellOver = int(map(mouseX, 0, 600, 0, 600/cellSize));
     xCellOver = constrain(xCellOver, 0, 600/cellSize-1);
@@ -104,7 +126,7 @@ void draw() {
       cell[xCellOver][yCellOver]=2; // Make zombie
       fill(alive); // Fill alive color
     }
-  } else if (pause && keyPressed && (keyCode == UP)) {
+  } else if (pause && keyPressed && (key == 'P'|| key == 'p')) {
     // Map and avoid out of bound errors
     int xCellOver = int(map(mouseX, 0, 600, 0, 600/cellSize));
     xCellOver = constrain(xCellOver, 0, 600/cellSize-1);
@@ -127,21 +149,34 @@ void draw() {
   textSize(32);
   if (pause) {
     fill(255, 0, 0);
+  } else {
+    fill(255, 255, 255);
+    stroke(#747075);
   }
   rect(RecX, pauseRecY, recSizeX, recSizeY);
   fill(0, 0, 255);
   text("Pause", 650, 100);
-  fill(0);
+  fill(255, 255, 255);
   rect(RecX, resetRecY, recSizeX, recSizeY);
   fill(0, 0, 255);
   text("Reset", 650, 150);
-  fill(0);
+  fill(255, 255, 255);
   rect(RecX, clearRecY, recSizeX, recSizeY);
   fill(0, 0, 255);
   text("Clear", 650, 200);
   String s = "Move the slider to adjust the interval speed.";
   textSize(20);
   text(s, 100, 475);
+  String p = "Number of living prey cells";
+  textSize(12);
+  text(p, 650, 250);
+  String pr = "Number of living predator cells";
+  textSize(12);
+  text(pr, 650, 275);
+  String z = "Number of infected cells";
+  textSize(12);
+  text(z, 650, 300);
+
 
   hs1.update();
   hs1.display();
@@ -258,6 +293,9 @@ void mousePressed() {
     for (int x=0; x<600/cellSize; x++) {
       for (int y=0; y<400/cellSize; y++) {
         cell[x][y] = 0; // Save all to zero
+        countZ = 0;
+        countPrey = 0;
+        countPred = 0;
       }
     }
   }
