@@ -21,6 +21,6 @@ I took this from other examples in the processing website and my own coding know
 I was unable to properly export to mac. One will be able to view the source code from the GitHub repo from there one can run the code from processing.
 
 ADDED FOR RESUBMIT
-Added a way to count the total number of cell types (from lab 3)
-Changed key mapping to p (add predators) and z (add zombies)
-Changed background color of buttons and grid to white with a gray border
+Added a way to count the total number of cell types (from lab 3). I did this because biologists might want to know how many cells are present.
+Changed key mapping to p (add predators) and z (add zombies). I did this from your comments and because it seemed to make adding cells easier.
+Changed background color of buttons and grid to white with a gray border. I did this from your comments and because it is more appealing.
